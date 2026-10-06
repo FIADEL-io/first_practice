@@ -2,6 +2,8 @@ import os
 import re
 import sys
 from typing import Callable
+from config import AppConfig, parse_args
+from script_runner import run_script
 
 # Константы
 DEFAULT_VFS_NAME = "default_vfs"
@@ -61,8 +63,28 @@ def execute_command(command: str, args: list[str]) -> int:
     return handler(args)
 
 
+def print_debug_info(config: AppConfig) -> None:
+    print("=== Debug: Configuration ===")
+    print(f"vfs_path:    {config.vfs_path}")
+    print(f"script_path: {config.script_path}")
+    print("============================")
+
+
 def main() -> int:
+    config = parse_args()
+    print_debug_info(config)
+
     prompt = PROMPT_TEMPLATE.format(vfs_name=DEFAULT_VFS_NAME)
+
+    if config.script_path is not None:
+        script_result = run_script(
+            script_path=config.script_path,
+            execute_command=execute_command,
+            parse_command=parse_command,
+            expand_env_vars=expand_env_vars,
+        )
+        if script_result != 0:
+            return script_result
 
     while True:
         try:
