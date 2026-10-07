@@ -1,7 +1,5 @@
 # Python
 __pycache__/
-.mypy_cache/
-*.mypy_cache/
 *.py[cod]
 *$py.class
 *.so
@@ -12,6 +10,8 @@ venv/
 *.egg-info/
 dist/
 build/
+.mypy_cache/
+.pytest_cache/
 
 # IDE
 .vscode/
@@ -22,4 +22,4 @@ build/
 
 # OS
 .DS_Store
-Thumbs.db
+Thumbs.dbы
