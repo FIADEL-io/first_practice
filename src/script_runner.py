@@ -16,21 +16,16 @@ def run_script(
         for line_number, raw_line in enumerate(file, start=1):
             line = raw_line.strip()
 
-            # Пропускаем пустые строки и комментарии
             if not line or line.startswith("#"):
                 continue
 
-            # Имитация диалога: выводим ввод
             print(f"[script:{line_number}]$ {line}")
 
-            # Раскрываем переменные окружения
             expanded = expand_env_vars(line)
             command, args = parse_command(expanded)
 
-            # Выполняем команду
             return_code = execute_command(command, args)
 
-            # ВАЖНО для варианта 11: остановка при первой ошибке
             if return_code != 0:
                 print(
                     f"error: script stopped at line {line_number}: "

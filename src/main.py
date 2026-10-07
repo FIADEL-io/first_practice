@@ -5,7 +5,6 @@ from typing import Callable
 from config import AppConfig, parse_args
 from script_runner import run_script
 
-# Константы
 DEFAULT_VFS_NAME = "default_vfs"
 PROMPT_TEMPLATE = "[{vfs_name}]$ "
 ENV_VAR_PATTERN = re.compile(
@@ -14,7 +13,6 @@ ENV_VAR_PATTERN = re.compile(
 ERROR_UNKNOWN_COMMAND = 127
 EXIT_CODE_SUCCESS = 0
 
-# Типы
 CommandHandler = Callable[[list[str]], int]
 
 

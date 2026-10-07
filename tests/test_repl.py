@@ -5,7 +5,7 @@ from unittest import mock
 
 sys.path.insert(0, "src")
 
-from main import expand_env_vars, parse_command, execute_command  # noqa: E402
+from main import expand_env_vars, parse_command, execute_command
 
 
 class TestExpandEnvVars(unittest.TestCase):
