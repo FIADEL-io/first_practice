@@ -6,28 +6,26 @@ from typing import Optional
 
 @dataclass(frozen=True)
 class AppConfig:
-
     vfs_path: Path
     script_path: Optional[Path] = None
 
 
 def parse_args(argv: Optional[list[str]] = None) -> AppConfig:
-
     parser = argparse.ArgumentParser(
-        description="VFS Emulator — эмулятор командной оболочки UNIX.",
+        description="VFS Emulator.",
         prog="vfs-emulator",
     )
     parser.add_argument(
         "--vfs-path",
         type=Path,
         required=True,
-        help="Путь к физическому расположению VFS.",
+        help="Path to VFS.",
     )
     parser.add_argument(
         "--script-path",
         type=Path,
         default=None,
-        help="Путь к стартовому скрипту (опционально).",
+        help="Path to script.",
     )
 
     args = parser.parse_args(argv)

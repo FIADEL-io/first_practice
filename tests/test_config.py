@@ -5,12 +5,11 @@ from unittest import mock
 
 sys.path.insert(0, "src")
 
-from config import parse_args
-from script_runner import run_script
+from config import parse_args  # noqa: E402
+from script_runner import run_script  # noqa: E402
 
 
 class TestParseArgs(unittest.TestCase):
-
     def test_vfs_path_only(self) -> None:
         config = parse_args(["--vfs-path", "/tmp/vfs"])
         self.assertEqual(config.vfs_path, Path("/tmp/vfs"))
@@ -31,9 +30,7 @@ class TestParseArgs(unittest.TestCase):
 
 
 class TestScriptRunner(unittest.TestCase):
-
     def test_script_not_found(self) -> None:
-
         def dummy_execute(cmd, args):
             return 0
 
