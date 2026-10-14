@@ -1,17 +1,22 @@
 import os
+import sys
 import unittest
 from unittest import mock
 
-import sys
 sys.path.insert(0, "src")
 
-from main import (  # noqa: E402
+from main import (
     Context,
-    expand_env_vars,
     execute_command,
+    expand_env_vars,
     parse_command,
 )
-from vfs import create_default_vfs  # noqa: E402
+from vfs import create_default_vfs
+
+
+def make_context() -> Context:
+    vfs = create_default_vfs()
+    return Context(vfs)
 
 
 class TestExpandEnvVars(unittest.TestCase):
@@ -43,15 +48,12 @@ class TestParseCommand(unittest.TestCase):
 
 
 class TestExecuteCommand(unittest.TestCase):
-    def setUp(self) -> None:
-        vfs = create_default_vfs()
-        self.ctx = Context(vfs)
-
     def test_unknown_command(self) -> None:
-        self.assertEqual(execute_command("foobar", [], self.ctx), 127)
+        result = execute_command("foobar", [], make_context())
+        self.assertEqual(result, 127)
 
     def test_known_command(self) -> None:
-        result = execute_command("ls", [], self.ctx)
+        result = execute_command("ls", [], make_context())
         self.assertEqual(result, 0)
 
 

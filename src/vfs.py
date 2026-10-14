@@ -1,7 +1,7 @@
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Optional, cast
+from typing import Dict, Optional
 
 
 @dataclass
@@ -37,25 +37,21 @@ def load_vfs_from_directory(directory: Path) -> VFS:
     for item in directory.rglob("*"):
         relative = item.relative_to(directory)
         parts = relative.parts
-
         current: VFSDirectory = vfs.root
         for part in parts[:-1]:
             if part not in current.children:
                 current.children[part] = VFSDirectory(name=part)
-
             child = current.children[part]
             if not isinstance(child, VFSDirectory):
                 break
-
-            # Явно приводим тип, так как мы знаем, что это VFSDirectory
-            current = cast(VFSDirectory, child)
-
-        name = parts[-1]
-        if item.is_file():
-            current.children[name] = VFSFile(name=name)
-        elif item.is_dir():
-            if name not in current.children:
-                current.children[name] = VFSDirectory(name=name)
+            current = child
+        else:
+            name = parts[-1]
+            if item.is_file():
+                current.children[name] = VFSFile(name=name)
+            elif item.is_dir():
+                if name not in current.children:
+                    current.children[name] = VFSDirectory(name=name)
 
     return vfs
 
@@ -85,28 +81,23 @@ def resolve_path(
 ) -> Optional[VFSNode]:
     if not path_str:
         return current_dir
-
-    # Текущий узел может быть как каталогом, так и файлом.
-    current: VFSNode
     if path_str.startswith("/"):
-        current = root
+        node: VFSNode = root
         parts = path_str.strip("/").split("/")
     else:
-        current = current_dir
+        node = current_dir
         parts = path_str.split("/")
-
     for part in parts:
         if part == "" or part == ".":
             continue
         if part == "..":
             return None
-        if not isinstance(current, VFSDirectory):
+        if not isinstance(node, VFSDirectory):
             return None
-        if part not in current.children:
+        if part not in node.children:
             return None
-        current = current.children[part]
-
-    return current
+        node = node.children[part]
+    return node
 
 
 def get_current_dir_from_root(
@@ -115,13 +106,11 @@ def get_current_dir_from_root(
 ) -> VFSDirectory:
     if cwd_path == "/" or cwd_path == "":
         return root
-
     parts = cwd_path.strip("/").split("/")
     current: VFSDirectory = root
     for part in parts:
         child = current.children.get(part)
-        if isinstance(child, VFSDirectory):
-            current = child
-        else:
+        if not isinstance(child, VFSDirectory):
             return root
+        current = child
     return current

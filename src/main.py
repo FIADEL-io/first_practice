@@ -53,26 +53,18 @@ def cmd_ls(args: List[str], ctx: Context) -> int:
         target_path = args[0]
     else:
         target_path = ctx.cwd
-
-    node = resolve_path(
-        ctx.vfs.root,
-        get_current_dir_from_root(ctx.vfs.root, ctx.cwd),
-        target_path,
-    )
-
+    current_dir = get_current_dir_from_root(ctx.vfs.root, ctx.cwd)
+    node = resolve_path(ctx.vfs.root, current_dir, target_path)
     if node is None:
         print(f"error: no such directory: {target_path}")
         return ERROR_INVALID_ARGUMENT
-
     if not isinstance(node, VFSDirectory):
         print(f"error: not a directory: {target_path}")
         return ERROR_INVALID_ARGUMENT
-
     for name in sorted(node.children.keys()):
         child = node.children[name]
         suffix = "/" if isinstance(child, VFSDirectory) else ""
         print(f"{name}{suffix}")
-
     return 0
 
 
@@ -80,27 +72,21 @@ def cmd_cd(args: List[str], ctx: Context) -> int:
     if not args:
         ctx.cwd = "/"
         return 0
-
     target_path = args[0]
     current_dir = get_current_dir_from_root(ctx.vfs.root, ctx.cwd)
     node = resolve_path(ctx.vfs.root, current_dir, target_path)
-
     if node is None:
         print(f"error: no such directory: {target_path}")
         return ERROR_INVALID_ARGUMENT
-
     if not isinstance(node, VFSDirectory):
         print(f"error: not a directory: {target_path}")
         return ERROR_INVALID_ARGUMENT
-
     if target_path.startswith("/"):
         ctx.cwd = "/" + "/".join(target_path.strip("/").split("/"))
+    elif ctx.cwd == "/":
+        ctx.cwd = "/" + target_path
     else:
-        if ctx.cwd == "/":
-            ctx.cwd = "/" + target_path
-        else:
-            ctx.cwd = ctx.cwd + "/" + target_path
-
+        ctx.cwd = ctx.cwd + "/" + target_path
     ctx.cwd = ctx.cwd.replace("//", "/")
     return 0
 
@@ -113,7 +99,6 @@ def cmd_pwd(args: List[str], ctx: Context) -> int:
 def cmd_vfs_init(args: List[str], ctx: Context) -> int:
     if ctx.vfs.source_path:
         clear_physical_directory(ctx.vfs.source_path)
-
     default_vfs = create_default_vfs()
     ctx.vfs.root = default_vfs.root
     ctx.cwd = "/"
@@ -145,13 +130,11 @@ def execute_command(
     if handler is None:
         print(f"error: unknown command '{command}'")
         return ERROR_UNKNOWN_COMMAND
-
     if ctx is None:
         ctx = _global_context
     if ctx is None:
         print("error: no VFS context initialized")
         return ERROR_INVALID_ARGUMENT
-
     return handler(args, ctx)
 
 
@@ -162,48 +145,48 @@ def print_debug_info(config: AppConfig) -> None:
     print("============================")
 
 
-def main() -> int:
-    global _global_context
+def run_startup_script(config: AppConfig) -> int:
+    if config.script_path is None:
+        return EXIT_CODE_SUCCESS
+    return run_script(
+        script_path=config.script_path,
+        execute_command=execute_command,
+        parse_command=parse_command,
+        expand_env_vars=expand_env_vars,
+    )
 
-    config = parse_args()
-    print_debug_info(config)
 
-    try:
-        vfs = load_vfs_from_directory(config.vfs_path)
-    except (FileNotFoundError, ValueError, PermissionError) as exc:
-        print(f"error: failed to load VFS: {exc}")
-        return 1
-
-    _global_context = Context(vfs)
-
-    prompt = PROMPT_TEMPLATE.format(vfs_name=DEFAULT_VFS_NAME)
-
-    if config.script_path is not None:
-        script_result = run_script(
-            script_path=config.script_path,
-            execute_command=execute_command,
-            parse_command=parse_command,
-            expand_env_vars=expand_env_vars,
-        )
-        if script_result != 0:
-            return script_result
-
+def run_repl(prompt: str) -> int:
     while True:
         try:
             line = input(prompt)
         except EOFError:
             print()
             return EXIT_CODE_SUCCESS
-
         line = expand_env_vars(line.strip())
         if not line:
             continue
-
         command, args = parse_command(line)
         if command == "exit":
             return EXIT_CODE_SUCCESS
-
         execute_command(command, args)
+
+
+def main() -> int:
+    global _global_context
+    config = parse_args()
+    print_debug_info(config)
+    try:
+        vfs = load_vfs_from_directory(config.vfs_path)
+    except (FileNotFoundError, ValueError, PermissionError) as exc:
+        print(f"error: failed to load VFS: {exc}")
+        return 1
+    _global_context = Context(vfs)
+    prompt = PROMPT_TEMPLATE.format(vfs_name=DEFAULT_VFS_NAME)
+    script_result = run_startup_script(config)
+    if script_result != 0:
+        return script_result
+    return run_repl(prompt)
 
 
 if __name__ == "__main__":

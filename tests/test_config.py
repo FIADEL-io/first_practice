@@ -5,8 +5,8 @@ from unittest import mock
 
 sys.path.insert(0, "src")
 
-from config import parse_args  # noqa: E402
-from script_runner import run_script  # noqa: E402
+from config import parse_args
+from script_runner import run_script
 
 
 class TestParseArgs(unittest.TestCase):

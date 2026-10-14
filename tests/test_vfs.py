@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, "src")
 
-from vfs import (  # noqa: E402
+from vfs import (
     VFSDirectory,
     VFSFile,
     create_default_vfs,
