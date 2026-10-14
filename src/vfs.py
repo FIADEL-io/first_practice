@@ -1,7 +1,7 @@
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 
 @dataclass
@@ -26,33 +26,41 @@ class VFS:
         self.source_path = source_path
 
 
+def find_or_create_parent(
+    root: VFSDirectory,
+    parts: Tuple[str, ...],
+) -> Optional[VFSDirectory]:
+    current = root
+    for part in parts:
+        if part not in current.children:
+            current.children[part] = VFSDirectory(name=part)
+        child = current.children[part]
+        if not isinstance(child, VFSDirectory):
+            return None
+        current = child
+    return current
+
+
+def add_node(parent: VFSDirectory, name: str, is_file: bool) -> None:
+    if is_file:
+        parent.children[name] = VFSFile(name=name)
+    elif name not in parent.children:
+        parent.children[name] = VFSDirectory(name=name)
+
+
 def load_vfs_from_directory(directory: Path) -> VFS:
     if not directory.exists():
         raise FileNotFoundError(f"VFS source not found: {directory}")
     if not directory.is_dir():
         raise ValueError(f"Not a directory: {directory}")
-
     vfs = VFS(source_path=directory.resolve())
-
     for item in directory.rglob("*"):
         relative = item.relative_to(directory)
         parts = relative.parts
-        current: VFSDirectory = vfs.root
-        for part in parts[:-1]:
-            if part not in current.children:
-                current.children[part] = VFSDirectory(name=part)
-            child = current.children[part]
-            if not isinstance(child, VFSDirectory):
-                break
-            current = child
-        else:
-            name = parts[-1]
-            if item.is_file():
-                current.children[name] = VFSFile(name=name)
-            elif item.is_dir():
-                if name not in current.children:
-                    current.children[name] = VFSDirectory(name=name)
-
+        parent = find_or_create_parent(vfs.root, parts[:-1])
+        if parent is None:
+            continue
+        add_node(parent, parts[-1], item.is_file())
     return vfs
 
 
